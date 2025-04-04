@@ -12,6 +12,7 @@ export const verifyJWT = (req: Request, res: Response, next: NextFunction): void
     const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
     if(typeof decoded === "object" && "role" in decoded){
       req.role = (decoded as { role: string }).role;
+      req.userId = (decoded as { id: string }).id;
       next(); 
     }
     else{
