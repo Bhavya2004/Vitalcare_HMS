@@ -11,6 +11,7 @@ router.get("/dashboard", verifyJWT, (req:Request, res:Response,next:NextFunction
     res.status(403).json({message:"Access denied"});
     return;
   }
+  //function currying
   checkAccess(userRole)(req,res,next);
 },
 getAdminDashboard
