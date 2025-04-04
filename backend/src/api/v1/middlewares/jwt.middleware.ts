@@ -9,11 +9,15 @@ export const verifyJWT = (req: Request, res: Response, next: NextFunction): void
   }
 
   try {
-    const decoded = jwt.verify(token, "your-secret-key") as { role: string };
-    console.log("Decoded Token:", decoded);
-    // req.body.role = decoded.role;
-    (req.body as {role:string}).role = decoded.role; // Attach the role to the request object
-    next(); 
+    const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
+    if(typeof decoded === "object" && "role" in decoded){
+      req.role = (decoded as { role: string }).role;
+      next(); 
+    }
+    else{
+      res.status(403).json({ message: "Invalid token" });
+      return;
+    }
   
   } catch (err) {
     console.error("JWT Verification Error:", err);
