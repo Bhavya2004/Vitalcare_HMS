@@ -27,9 +27,11 @@ enum Status {
 }
 model User {
   id       String   @id @default(uuid()) 
-  username String   @unique              
-  password String                        
-  role     Role                          // Role of the user (e.g., ADMIN, DOCTOR, etc.)
+  email    String   @unique             
+  password String             
+  firstName String?
+  lastName  String?          
+  role     Role     @default(PATIENT)     // Role of the user (e.g., ADMIN, DOCTOR, etc.)
   status   Status   @default(ACTIVE)     // Account status (e.g., ACTIVE, INACTIVE)
 
   created_at DateTime @default(now())
