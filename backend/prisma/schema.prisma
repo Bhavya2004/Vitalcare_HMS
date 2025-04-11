@@ -12,4 +12,28 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
-  
+enum Role {
+  ADMIN
+  NURSE
+  DOCTOR
+  LAB_TECHNICIAN
+  PATIENT
+  CASHIER
+}
+enum Status {
+  ACTIVE
+  INACTIVE
+  DORMANT
+}
+model User {
+  id       String   @id @default(uuid()) 
+  email    String   @unique             
+  password String             
+  firstName String?
+  lastName  String?          
+  role     Role     @default(PATIENT)     // Role of the user (e.g., ADMIN, DOCTOR, etc.)
+  status   Status   @default(ACTIVE)     // Account status (e.g., ACTIVE, INACTIVE)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}

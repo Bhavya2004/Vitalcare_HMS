@@ -5,6 +5,7 @@ import { routeAccess } from "../routes/index";
 declare module "express-serve-static-core" {
   interface Request {
     role?: string;
+    userId?: string;
   }
 }
 
