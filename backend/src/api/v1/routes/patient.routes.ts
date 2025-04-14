@@ -1,5 +1,5 @@
 import express, { NextFunction, Request, Response } from "express";
-import { registerPatientDetails } from "../controllers/patient.controller";
+import { checkPatientRegistration, registerPatientDetails } from "../controllers/patient.controller";
 import { verifyJWT } from "../middlewares/jwt.middleware";
 import { checkAccess } from "../middlewares/authentication.middleware";
 
@@ -17,5 +17,7 @@ router.post("/register",verifyJWT,(req:Request, res:Response, next:NextFunction)
   },
   registerPatientDetails
 );
+
+router.get("/check-registration",verifyJWT,checkPatientRegistration);
 
 export default router; 
