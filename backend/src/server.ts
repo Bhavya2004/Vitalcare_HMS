@@ -6,6 +6,7 @@ import adminRoutes from "./api/v1/routes/admin/adminDashboard.routes";
 import authRoutes from "./api/v1/routes/authentication.routes";
 import patientRoutes from "./api/v1/routes/patient/patient.routes";
 import cors from 'cors'
+import path from 'path';
 
 dotenv.config();
 const app=express();
@@ -15,7 +16,12 @@ app.use(cors({
   credentials:true,
 }))
 
-app.use(express.json());
+// Increase the payload size limit to handle image uploads
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
+
+// Serve static files from uploads directory
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 app.use("/admin", adminRoutes);
 app.use("/auth", authRoutes);

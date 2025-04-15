@@ -7,17 +7,29 @@ const prisma = new PrismaClient();
 
 export const registerPatientDetails = async (req: Request, res: Response): Promise<void> => {
   try {
-    // Get the user ID from the JWT token (added by the auth middleware)
     const userId = req.userId;
     if (!userId) {
       res.status(401).json({ message: "Unauthorized" });
       return;
     }
 
-    // Validate the request body
-    const validatedData = patientRegistrationSchema.parse(req.body);
+    // Use body fields from multipart/form-data
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const formData = req.body;
 
-    // Check if patient record already exists
+    // Optional: Attach file path to formData
+    if (req.file) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      formData.img = `/uploads/${req.file.filename}`;
+    }
+
+    console.log("Form data received:", formData);
+
+    // Validate form data (formData.img will still be a string path)
+    const validatedData = patientRegistrationSchema.parse(formData);
+
+    console.log("Validated data:", validatedData);
+
     const existingPatient = await prisma.patient.findUnique({
       where: { user_id: userId },
     });
@@ -27,7 +39,6 @@ export const registerPatientDetails = async (req: Request, res: Response): Promi
       return;
     }
 
-    // Create patient record
     const patient = await prisma.patient.create({
       data: {
         ...validatedData,
@@ -42,10 +53,12 @@ export const registerPatientDetails = async (req: Request, res: Response): Promi
         first_name: patient.first_name,
         last_name: patient.last_name,
         email: patient.email,
+        img: patient.img,
       },
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
+      console.error("Validation error:", error.errors);
       res.status(400).json({
         message: "Validation failed",
         errors: error.errors,
@@ -55,7 +68,7 @@ export const registerPatientDetails = async (req: Request, res: Response): Promi
       res.status(500).json({ message: "Internal server error" });
     }
   }
-}; 
+};
 
 export const checkPatientRegistration = async (req: Request, res: Response): Promise<void> => {
   try {

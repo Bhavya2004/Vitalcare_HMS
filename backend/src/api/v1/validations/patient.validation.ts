@@ -19,9 +19,9 @@ export const patientRegistrationSchema = z.object({
   medical_history: z.string().optional(),
   insurance_provider: z.string().optional(),
   insurance_number: z.string().optional(),
-  privacy_consent: z.boolean(),
-  service_consent: z.boolean(),
-  medical_consent: z.boolean(),
+  privacy_consent: z.string().transform(val => val === 'true' || val === '1' || val === 'on'),
+  service_consent: z.string().transform(val => val === 'true' || val === '1' || val === 'on'),
+  medical_consent: z.string().transform(val => val === 'true' || val === '1' || val === 'on'),
   img: z.string().optional(),
   colorCode: z.string().optional(),
 });
