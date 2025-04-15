@@ -4,7 +4,7 @@ import express from "express";
 import dotenv from "dotenv";
 import adminRoutes from "./api/v1/routes/admin/adminDashboard.routes";
 import authRoutes from "./api/v1/routes/authentication.routes";
-import patientRoutes from "./api/v1/routes/patient.routes";
+import patientRoutes from "./api/v1/routes/patient/patient.routes";
 import cors from 'cors'
 
 dotenv.config();

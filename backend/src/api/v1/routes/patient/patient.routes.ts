@@ -1,7 +1,8 @@
 import express, { NextFunction, Request, Response } from "express";
-import { checkPatientRegistration, registerPatientDetails } from "../controllers/patient.controller";
-import { verifyJWT } from "../middlewares/jwt.middleware";
-import { checkAccess } from "../middlewares/authentication.middleware";
+import { checkAccess } from "../../middlewares/authentication.middleware";
+import { verifyJWT } from "../../middlewares/jwt.middleware";
+import { registerPatientDetails, checkPatientRegistration } from "../../controllers/patient.controller";
+
 
 const router = express.Router();
 
