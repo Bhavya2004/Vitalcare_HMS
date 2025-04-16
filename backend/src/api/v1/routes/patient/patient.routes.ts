@@ -7,7 +7,8 @@ import { upload } from "../../middlewares/imageUpload.middleware";
 
 const router = express.Router();
 
-// Register patient details - protected route, only accessible by authenticated patients
+router.get("/check-registration",verifyJWT,checkPatientRegistration);
+
 router.post("/register",verifyJWT,upload.single('img'),(req:Request, res:Response, next:NextFunction) => 
   {
     const userRole = req.role;
@@ -19,7 +20,5 @@ router.post("/register",verifyJWT,upload.single('img'),(req:Request, res:Respons
   },
   registerPatientDetails
 );
-
-router.get("/check-registration",verifyJWT,checkPatientRegistration);
 
 export default router; 

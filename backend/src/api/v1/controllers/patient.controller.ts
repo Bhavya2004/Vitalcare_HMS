@@ -5,6 +5,28 @@ import { patientRegistrationSchema } from "../validations/patient.validation";
 
 const prisma = new PrismaClient();
 
+type PatientFormData = z.infer<typeof patientRegistrationSchema>;
+
+/**
+ * Registers patient details in the system.
+ *
+ * This function handles the registration of patient details by validating the input data,
+ * checking for existing patient records, and creating a new patient record in the database.
+ * It also supports file uploads for patient images and validates the input using Zod schemas.
+ *
+ * @param req - The HTTP request object, which includes the user ID, body fields, and file data.
+ * @param res - The HTTP response object used to send the response back to the client.
+ * @returns A promise that resolves to void. Sends an appropriate HTTP response to the client.
+ *
+ * @throws {z.ZodError} If the input validation fails, a 400 response is sent with validation errors.
+ * @throws {Error} If an unexpected error occurs, a 500 response is sent with an internal server error message.
+ *
+ * HTTP Responses:
+ * - 201: Patient details registered successfully. Returns the patient details.
+ * - 400: Validation failed or patient details already registered.
+ * - 401: Unauthorized access if the user ID is missing.
+ * - 500: Internal server error for unexpected issues.
+ */
 export const registerPatientDetails = async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = req.userId;
@@ -12,24 +34,18 @@ export const registerPatientDetails = async (req: Request, res: Response): Promi
       res.status(401).json({ message: "Unauthorized" });
       return;
     }
+    // body fields from multipart/form-data
+    const formData = {...req.body} as PatientFormData;
 
-    // Use body fields from multipart/form-data
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const formData = req.body;
-
-    // Optional: Attach file path to formData
+    // Attach file path to formData
     if (req.file) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       formData.img = `/uploads/${req.file.filename}`;
     }
 
-    console.log("Form data received:", formData);
+    // Validate form data with Zod
+    const validatedData : PatientFormData = patientRegistrationSchema.parse(formData);
 
-    // Validate form data (formData.img will still be a string path)
-    const validatedData = patientRegistrationSchema.parse(formData);
-
-    console.log("Validated data:", validatedData);
-
+    // Check if the patient is already registered
     const existingPatient = await prisma.patient.findUnique({
       where: { user_id: userId },
     });
@@ -39,6 +55,7 @@ export const registerPatientDetails = async (req: Request, res: Response): Promi
       return;
     }
 
+    // Create patient record in the database
     const patient = await prisma.patient.create({
       data: {
         ...validatedData,
@@ -58,18 +75,29 @@ export const registerPatientDetails = async (req: Request, res: Response): Promi
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      console.error("Validation error:", error.errors);
       res.status(400).json({
         message: "Validation failed",
         errors: error.errors,
       });
     } else {
-      console.error("Error during patient registration:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   }
 };
 
+/**
+ * Checks if the patient is already registered or not.
+ *
+ * @param req - The HTTP request object, which should include the `userId` property.
+ * @param res - The HTTP response object used to send the response.
+ * @returns A promise that resolves to void. Sends a JSON response indicating whether the patient is registered.
+ *
+ * @throws {Error} If an unexpected error occurs during the process, a 500 status code is returned with an error message.
+ *
+ * HTTP Responses:
+ * - 401 Unauthorized: If the `userId` is not present in the request.
+ * - 200 OK: If the request is successful, returns a JSON object with `isRegistered` set to `true` or `false`.
+ */
 export const checkPatientRegistration = async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = req.userId;
