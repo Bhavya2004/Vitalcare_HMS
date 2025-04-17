@@ -16,4 +16,5 @@ router.get("/dashboard", verifyJWT, (req:Request, res:Response,next:NextFunction
 },
 getAdminDashboard
 );
+
 export default router;
