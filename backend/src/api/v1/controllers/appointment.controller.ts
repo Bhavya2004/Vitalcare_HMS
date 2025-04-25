@@ -354,3 +354,29 @@ export const updateAppointmentStatus = async (req: Request, res: Response): Prom
     }
   }
 }; 
+
+export const getDoctors = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const doctors = await prisma.doctor.findMany({
+      select: {
+        id: true,
+        name: true,
+        specialization: true,
+        img: true
+      }
+    });
+
+    console.log("Fetched doctors:", doctors);
+    res.status(200).json({
+      success: true,
+      message: "Doctors fetched successfully",
+      data: doctors
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch doctors",
+      error: error instanceof Error ? error.message : "Unknown error occurred"
+    });
+  }
+};
