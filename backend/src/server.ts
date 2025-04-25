@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import adminRoutes from "./api/v1/routes/admin/adminDashboard.routes";
 import authRoutes from "./api/v1/routes/authentication.routes";
 import patientRoutes from "./api/v1/routes/patient/patient.routes";
+import appointmentRoutes from "./api/v1/routes/patient/appointment.routes";
 import cors from 'cors'
 import path from 'path';
 
@@ -26,6 +27,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use("/admin", adminRoutes);
 app.use("/auth", authRoutes);
 app.use("/patient", patientRoutes);
+app.use("/patient/appointments", appointmentRoutes);
 
 app.listen(process.env.PORT, () => {
   console.log(`Server is running on port ${String(process.env.PORT)}`);

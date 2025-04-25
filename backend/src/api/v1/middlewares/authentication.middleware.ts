@@ -1,5 +1,4 @@
 import { Request, Response, NextFunction } from "express";
-import { routeAccess } from "../routes/index";
 
 /**
  * Declaration merging : Extends the Express `Request` interface to include custom properties.
@@ -25,23 +24,23 @@ declare module "express-serve-static-core" {
  *
  */
 export const checkAccess = (role: string) => {
-  return (req:Request, res: Response, next: NextFunction): void => {
-    // Extract the requested path from the `req` object.
-    const path = req.baseUrl + req.path;
-
+  return (req: Request, res: Response, next: NextFunction): void => {
     // Extract the user's role from 'req' object
     const userRole = req.role;
 
-    // Match the requested route against the `routeAccess` configuration to determine allowed roles.
-    const allowedRoles = routeAccess[path];
+    // If no user role is found, deny access
+    if (!userRole) {
+      res.status(403).json({ message: "Access denied: No user role found" });
+      return;
+    }
 
-    // If the user's role matches the allowed roles for the route, the request proceeds to the next middleware.
-    if (userRole && allowedRoles.includes(role)) {
+    // Check if the user's role matches the required role
+    if (userRole === role) {
     next();
     return;
     }
     
-    // If the user's role does not match, a 403 Forbidden response is sent with an "Access denied" message.
-    res.status(403).json({ message: "Access denied" });
+    // If the user's role does not match, a 403 Forbidden response is sent
+    res.status(403).json({ message: "Access denied: You don't have permission to access this !" });
   };
 };

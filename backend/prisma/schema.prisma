@@ -32,6 +32,18 @@ enum Gender {
   OTHER
 }
 
+enum AppointmentStatus {
+  PENDING
+  SCHEDULED
+  CANCELLED
+  COMPLETED
+}
+
+enum JOBTYPE {
+  FULL
+  PART  
+}
+
 model User {
   id       String   @id @default(uuid()) 
   email    String   @unique             
@@ -74,7 +86,59 @@ model Patient {
   medical_consent          Boolean
   img                      String?
   colorCode                String?
+  appointments             Appointment[]
 
   created_at               DateTime @default(now())
   updated_at               DateTime @updatedAt
 }
+
+model Doctor {
+  id                    String   @id @default(uuid())
+  email                 String   @unique
+  name                  String
+  specialization        String
+  license_number        String
+  phone                 String
+  address               String
+  department            String?
+  img                   String?
+  colorCode             String?
+  availability_status   String?
+  type                  JOBTYPE  @default(FULL)
+  working_days          WorkingDays[]
+  appointments          Appointment[]
+
+  created_at            DateTime @default(now())
+  updated_at            DateTime @updatedAt
+}
+
+model WorkingDays {
+  id              Int   @id @default(autoincrement())
+  doctor_id       String
+  day             String
+  start_time      String
+  close_time      String
+
+  doctor          Doctor  @relation(fields: [doctor_id], references: [id], onDelete: Cascade)
+
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+}
+
+model Appointment {
+  id                Int   @id @default(autoincrement())
+  patient_id        String
+  doctor_id         String
+  appointment_date  DateTime
+  time              String
+  status            AppointmentStatus @default(PENDING)
+  type              String
+  note              String?
+  patient           Patient  @relation(fields: [patient_id], references: [id], onDelete: Cascade)
+  doctor            Doctor   @relation(fields: [doctor_id], references: [id], onDelete: Cascade)
+
+  reason            String?
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+}
+
