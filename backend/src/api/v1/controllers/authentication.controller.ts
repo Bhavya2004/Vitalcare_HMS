@@ -28,6 +28,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     // Check if a user with the provided email exists in the database.
     const user=await prisma.user.findUnique({
         where:{email},
+        include:{patient:true}
     });
 
     // Verify the provided password against the stored hashed password.
@@ -44,13 +45,28 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
     // Generate a JWT token with the user's ID and role as the payload.
     const token = jwt.sign(
-        { id: user.id, role: user.role }, // Payload
+        { 
+          id: user.id,
+          role: user.role,
+          firstName: user.patient?.first_name,
+          lastName: user.patient?.last_name,
+          gender: user.patient?.gender
+        }, // Payload
         process.env.JWT_SECRET, // Secret key
         { expiresIn: "1h" } // Token expiration
     );
 
     // Return the generated token in the response.
-    res.json({ token });
+    res.json({ 
+      token,
+      user:{
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        firstName: user.patient?.first_name,
+        lastName: user.patient?.last_name,
+        gender:user.patient?.gender
+      } });
 }
 catch(error){
   // Handle validation errors and internal server errors

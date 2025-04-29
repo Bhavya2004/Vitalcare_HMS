@@ -223,6 +223,16 @@ export const getAppointmentById = async (req: Request, res: Response): Promise<v
             img: true,
           },
         },
+        patient: {
+          select: {
+            first_name: true,
+            last_name: true,
+            gender: true,
+            phone: true,
+            address: true,
+            date_of_birth: true,
+          }
+        }
       },
     });
 
