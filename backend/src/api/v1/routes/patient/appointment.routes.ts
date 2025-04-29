@@ -7,6 +7,7 @@ import {
   getAppointmentById,
   updateAppointmentStatus,
   getDoctors,
+  getAppointmentCount,
 } from "../../controllers/appointment.controller";
 
 const router = express.Router();
@@ -16,6 +17,9 @@ router.post("/", verifyJWT, checkAccess("PATIENT"), createAppointment);
 
 // Get all appointments for the logged-in patient
 router.get("/", verifyJWT, checkAccess("PATIENT"), getPatientAppointments);
+
+// Get the count of appointments for the logged-in patient
+router.get("/count", verifyJWT, checkAccess("PATIENT"), getAppointmentCount);
 
 // Get all doctors
 router.get("/doctors", verifyJWT, checkAccess("PATIENT"), getDoctors);

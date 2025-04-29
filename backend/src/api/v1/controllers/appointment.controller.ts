@@ -365,6 +365,52 @@ export const updateAppointmentStatus = async (req: Request, res: Response): Prom
   }
 }; 
 
+/**
+ * Gets the count of appointments for the logged-in patient.
+ */
+export const getAppointmentCount = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.userId;
+    if (!userId) {
+      res.status(401).json({
+        success: false,
+        message: "Unauthorized access"
+      });
+      return;
+    }
+
+    // Get patient details
+    const patient = await prisma.patient.findUnique({
+      where: { user_id: userId },
+    });
+
+    if (!patient) {
+      res.status(404).json({
+        success: false,
+        message: "Patient profile not found"
+      });
+      return;
+    }
+
+    // Get the count of appointments for the patient
+    const appointmentCount = await prisma.appointment.count({
+      where: { patient_id: patient.id },
+    });
+
+    res.status(200).json({
+      success: true,
+      data: { count: appointmentCount },
+    });
+  } catch (error) {
+    console.error("Error fetching appointment count:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: process.env.NODE_ENV === 'development' ? error : undefined
+    });
+  }
+};
+
 export const getDoctors = async (req: Request, res: Response): Promise<void> => {
   try {
     const doctors = await prisma.doctor.findMany({
