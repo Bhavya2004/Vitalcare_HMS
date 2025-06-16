@@ -115,7 +115,11 @@ The backend is currently in active development with the following features imple
 - Analytics dashboard including charts based on patient's medical history
 - Doctor ratings and review system 
 
+## 📚 Additional Resources
 
+- [Project Documentation](https://simformsolutionspvtltd-my.sharepoint.com/:w:/g/personal/bhavya_barai_simformsolutions_com/ER85co2NPRBKnPyHtnYTAaIBrXQyIfVvwdYRAiyeTbFAoQ
+)
+- [Database/ER Diagram](https://app.eraser.io/workspace/i6a4BWiOGLytq5zJh9HX?origin=share)
 
 ## 📋 Prerequisites
 
