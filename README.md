@@ -1,6 +1,6 @@
 # Healthcare Management System - Backend
 
-A robust and secure backend system for managing healthcare operations, built with Node.js, Express, TypeScript, and Prisma.
+A robust and secure backend system for managing healthcare operations, built with Node.js, Express, TypeScript, and Prisma. The Healthcare Management System is an integrated platform designed to streamline the process of managing medical appointments, patient records, billing, staff management, and doctor-patient interactions.This system supports three types of users: Admin, Doctor, and Patient, each with its own set of features. The flow of the project is organized by the roles, detailing their respective functionalities. 
 
 ## 🚀 Features
 
@@ -39,7 +39,7 @@ A robust and secure backend system for managing healthcare operations, built wit
 - **Authentication:** JWT
 - **File Upload:** Multer
 - **Validation:** Zod
-- **Testing:** Jest (planned)
+- **Testing:** (not planned)
 
 
 ## 📁 Project Structure
