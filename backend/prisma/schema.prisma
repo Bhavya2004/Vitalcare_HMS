@@ -12,6 +12,7 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
 enum Role {
   ADMIN
   NURSE
@@ -20,6 +21,7 @@ enum Role {
   PATIENT
   CASHIER
 }
+
 enum Status {
   ACTIVE
   INACTIVE
@@ -41,35 +43,37 @@ enum AppointmentStatus {
 
 enum JOBTYPE {
   FULL
-  PART  
+  PART
 }
 
 model User {
-  id       String   @id @default(uuid()) 
-  email    String   @unique             
-  password String             
+  id        String  @id @default(uuid())
+  email     String  @unique
+  password  String
   firstName String?
-  lastName  String?          
-  role     Role     @default(PATIENT)     // Role of the user (e.g., ADMIN, DOCTOR, etc.)
-  status   Status   @default(ACTIVE)     // Account status (e.g., ACTIVE, INACTIVE)
+  lastName  String?
+  role      Role    @default(PATIENT) // Role of the user (e.g., ADMIN, DOCTOR, etc.)
+  status    Status  @default(ACTIVE) // Account status (e.g., ACTIVE, INACTIVE)
 
   // Relation to Patient model
-  patient  Patient?
+  patient Patient?
+  //Relation to Doctor model
+  doctor  Doctor?
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 }
 
 model Patient {
-  id                       String   @id @default(uuid())
-  user_id                  String   @unique  // Reference to User table
-  user                     User     @relation(fields: [user_id], references: [id])
+  id                       String        @id @default(uuid())
+  user_id                  String        @unique // Reference to User table
+  user                     User          @relation(fields: [user_id], references: [id])
   first_name               String
   last_name                String
   date_of_birth            DateTime
-  gender                   Gender @default(MALE)
+  gender                   Gender        @default(MALE)
   phone                    String
-  email                    String   @unique
+  email                    String        @unique
   marital_status           String
   address                  String
   emergency_contact_name   String
@@ -88,57 +92,58 @@ model Patient {
   colorCode                String?
   appointments             Appointment[]
 
-  created_at               DateTime @default(now())
-  updated_at               DateTime @updatedAt
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 }
 
 model Doctor {
-  id                    String   @id @default(uuid())
-  email                 String   @unique
-  name                  String
-  specialization        String
-  license_number        String
-  phone                 String
-  address               String
-  department            String?
-  img                   String?
-  colorCode             String?
-  availability_status   String?
-  type                  JOBTYPE  @default(FULL)
-  working_days          WorkingDays[]
-  appointments          Appointment[]
+  id                  String        @id @default(uuid())
+  user_id             String?        @unique
+  user                User?          @relation(fields: [user_id], references: [id])
+  email               String        @unique
+  name                String
+  specialization      String
+  license_number      String
+  phone               String
+  address             String
+  department          String?
+  img                 String?
+  colorCode           String?
+  availability_status String?
+  type                JOBTYPE       @default(FULL)
+  working_days        WorkingDays[]
+  appointments        Appointment[]
 
-  created_at            DateTime @default(now())
-  updated_at            DateTime @updatedAt
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 }
 
 model WorkingDays {
-  id              Int   @id @default(autoincrement())
-  doctor_id       String
-  day             String
-  start_time      String
-  close_time      String
+  id         Int    @id @default(autoincrement())
+  doctor_id  String
+  day        String
+  start_time String
+  close_time String
 
-  doctor          Doctor  @relation(fields: [doctor_id], references: [id], onDelete: Cascade)
+  doctor Doctor @relation(fields: [doctor_id], references: [id], onDelete: Cascade)
 
-  created_at      DateTime @default(now())
-  updated_at      DateTime @updatedAt
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 }
 
 model Appointment {
-  id                Int   @id @default(autoincrement())
-  patient_id        String
-  doctor_id         String
-  appointment_date  DateTime
-  time              String
-  status            AppointmentStatus @default(PENDING)
-  type              String
-  note              String?
-  patient           Patient  @relation(fields: [patient_id], references: [id], onDelete: Cascade)
-  doctor            Doctor   @relation(fields: [doctor_id], references: [id], onDelete: Cascade)
+  id               Int               @id @default(autoincrement())
+  patient_id       String
+  doctor_id        String
+  appointment_date DateTime
+  time             String
+  status           AppointmentStatus @default(PENDING)
+  type             String
+  note             String?
+  patient          Patient           @relation(fields: [patient_id], references: [id], onDelete: Cascade)
+  doctor           Doctor            @relation(fields: [doctor_id], references: [id], onDelete: Cascade)
 
-  reason            String?
-  created_at        DateTime @default(now())
-  updated_at        DateTime @updatedAt
+  reason     String?
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 }
-
