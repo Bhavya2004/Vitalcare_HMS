@@ -1,20 +1,33 @@
-import express from 'express';
-import { getDoctorAppointments, updateDoctorAppointmentStatus } from '../controllers/doctor.controller';
+import { Router } from 'express';
+import {
+  createDoctor,
+  getAllDoctors,
+  getDoctorsForPatients,
+  getDoctorAppointments,
+  getAppointmentById,
+  updateDoctorAppointmentStatus,
+  addVitalSigns,
+} from '../controllers/doctor.controller';
 import { verifyJWT } from '../middlewares/jwt.middleware';
 import { checkAccess } from '../middlewares/authentication.middleware';
 
-const router = express.Router();
+// A single router to handle all doctor-related routes
+const router = Router();
 
-// GET /doctor/appointments - Get all appointments for the logged-in doctor
-router.get('/appointments', verifyJWT, checkAccess('DOCTOR'), (req, res): void => {
-  if (!req.userId) {
-    res.status(401).json({ message: 'Unauthorized: No doctor ID found' });
-    return;
-  }
-  req.params.doctorId = req.userId;
-  void getDoctorAppointments(req, res);
-});
+// --- Routes for Admins ---
+// Path: /admin/doctors
+router.post('/admin/doctors', verifyJWT, checkAccess('ADMIN'), createDoctor);
+router.get('/admin/doctors', verifyJWT, checkAccess('ADMIN'), getAllDoctors);
 
-router.put('/appointments/:id/status',verifyJWT,checkAccess('DOCTOR'),updateDoctorAppointmentStatus);
+// --- Routes for Patients ---
+// Path: /patient/doctors
+router.get('/patient/doctors', getDoctorsForPatients);
+
+// --- Routes for Doctors ---
+// Path: /doctor/...
+router.get('/doctor/appointments', verifyJWT, checkAccess('DOCTOR'), getDoctorAppointments);
+router.get('/doctor/appointments/:id', verifyJWT, checkAccess('DOCTOR'), getAppointmentById);
+router.put('/doctor/appointments/:id/status', verifyJWT, checkAccess('DOCTOR'), updateDoctorAppointmentStatus);
+router.post('/doctor/appointments/:id/vitals', verifyJWT, checkAccess('DOCTOR'), addVitalSigns);
 
 export default router; 

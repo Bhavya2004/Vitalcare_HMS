@@ -1,25 +1,6 @@
 import bcrypt from 'bcryptjs';
 import {  PrismaClient } from "@prisma/client";
-
-export interface WorkingDayInput {
-  day: string;
-  start_time: string;
-  close_time: string;
-}
-
-export interface DoctorCreateInput {
-  email: string;
-  password: string;
-  name: string;
-  specialization: string;
-  department: string;
-  license_number: string;
-  phone: string;
-  address: string;
-  type: 'FULL' | 'PART';
-  working_days: WorkingDayInput[];
-  user_id?: string;
-}
+import { DoctorCreateInput } from '../interfaces/doctors/doctor_types';
 
 const prisma = new PrismaClient();
 
@@ -83,6 +64,56 @@ export const getDoctorsForPatientsService = async () => {
       phone: true,
       email: true,
       working_days: true,
+    },
+  });
+};
+
+export const getAppointmentByIdService = async (appointmentId: number) => {
+  return prisma.appointment.findUnique({
+    where: { id: appointmentId },
+    include: {
+      patient: true,
+      doctor: true,
+      medical: {
+        include: {
+          vital_signs: true,
+        },
+      },
+    },
+  });
+};
+
+export const addVitalSignsService = async (
+  appointmentId: number,
+  data: any,
+) => {
+  const appointment = await prisma.appointment.findUnique({
+    where: { id: appointmentId },
+    select: { patient_id: true, doctor_id: true },
+  });
+
+  if (!appointment) {
+    throw new Error('Appointment not found');
+  }
+
+  let medicalRecord = await prisma.medicalRecords.findUnique({
+    where: { appointment_id: appointmentId },
+  });
+
+  if (!medicalRecord) {
+    medicalRecord = await prisma.medicalRecords.create({
+      data: {
+        appointment_id: appointmentId,
+        patient_id: appointment.patient_id,
+        doctor_id: appointment.doctor_id,
+      },
+    });
+  }
+
+  return prisma.vitalSigns.create({
+    data: {
+      medical_id: medicalRecord.id,
+      ...data,
     },
   });
 }; 

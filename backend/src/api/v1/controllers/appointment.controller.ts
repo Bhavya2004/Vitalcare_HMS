@@ -153,6 +153,11 @@ export const getPatientAppointments = async (req: Request, res: Response): Promi
             img: true,
           },
         },
+        medical: {
+          include: {
+            vital_signs: true,
+          },
+        },
       },
       orderBy: {
         appointment_date: 'desc',
@@ -231,6 +236,7 @@ export const getAppointmentById = async (req: Request, res: Response): Promise<v
             phone: true,
             address: true,
             date_of_birth: true,
+            img: true,
           }
         }
       },

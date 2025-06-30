@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { createDoctorService, getAllDoctorsService, getDoctorAppointmentsService, getDoctorsForPatientsService } from '../services/doctor.service';
+import { createDoctorService, getAllDoctorsService, getDoctorAppointmentsService, getDoctorsForPatientsService, getAppointmentByIdService, addVitalSignsService } from '../services/doctor.service';
 import { createDoctorSchema } from '../validations/doctor.validation';
 import { PrismaClient } from '@prisma/client';
 
@@ -98,5 +98,49 @@ export const updateDoctorAppointmentStatus = async (req: Request, res: Response)
     res.status(200).json({ success: true, data: updated });
   } catch (error) {
     res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const getAppointmentById = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (req.role !== 'DOCTOR') {
+      res.status(403).json({ message: 'Forbidden' });
+      return;
+    }
+    const appointmentId = parseInt(req.params.id, 10);
+    const appointment = await getAppointmentByIdService(
+      appointmentId,
+    );
+    if (!appointment) {
+      res.status(404).json({ message: 'Appointment not found' });
+      return;
+    }
+    res.status(200).json(appointment);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching appointment', error });
+  }
+};
+
+export const addVitalSigns = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (req.role !== 'DOCTOR') {
+      res.status(403).json({ message: 'Forbidden' });
+      return;
+    }
+    const appointmentId = parseInt(req.params.id, 10);
+    const vitalSignsData = req.body;
+    const newVitals = await addVitalSignsService(
+      appointmentId,
+      vitalSignsData,
+    );
+    res.status(201).json(newVitals);
+  } catch (error) {
+    res.status(500).json({ message: 'Error adding vital signs', error });
   }
 };

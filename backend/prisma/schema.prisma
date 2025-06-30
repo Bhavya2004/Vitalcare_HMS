@@ -91,6 +91,7 @@ model Patient {
   img                      String?
   colorCode                String?
   appointments             Appointment[]
+  medical                  MedicalRecords[]
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -142,8 +143,42 @@ model Appointment {
   note             String?
   patient          Patient           @relation(fields: [patient_id], references: [id], onDelete: Cascade)
   doctor           Doctor            @relation(fields: [doctor_id], references: [id], onDelete: Cascade)
+  reason           String?
+  medical          MedicalRecords?
+  created_at       DateTime          @default(now())
+  updated_at       DateTime          @updatedAt
+}
 
-  reason     String?
+model MedicalRecords {
+  id             Int          @id @default(autoincrement())
+  patient_id     String
+  appointment_id Int          @unique
+  doctor_id      String
+  treatment_plan String?
+  prescriptions  String?
+  lab_request    String?
+  notes          String?
+  appointment    Appointment  @relation(fields: [appointment_id], references: [id], onDelete: Cascade)
+  patient        Patient      @relation(fields: [patient_id], references: [id], onDelete: Cascade)
+  vital_signs    VitalSigns[]
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+model VitalSigns {
+  id                Int      @id @default(autoincrement())
+  medical_id        Int
+  medical           MedicalRecords @relation(fields: [medical_id], references: [id], onDelete: Cascade)
+  body_temperature  Float
+  systolic          Int
+  diastolic         Int
+  heart_rate        String
+  respiratory_rate  Int?
+  oxygen_saturation Int?
+  weight            Float
+  height            Float
+
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 }
