@@ -17,4 +17,27 @@ export const createDoctorSchema = z.object({
   address: z.string().min(1),
   password: z.string().min(6),
   working_days: z.array(workingDaySchema),
-}); 
+});
+
+export const doctorAppointmentStatusSchema = z.object({
+  status: z.string(),
+  reason: z.string().optional(),
+});
+
+export const vitalSignsSchema = z.object({
+  temperature: z.number(),
+  blood_pressure: z.string(),
+  heart_rate: z.number(),
+  weight: z.number(),
+  height: z.number(),
+  respiratory_rate: z.number().optional(),
+  oxygen_saturation: z.number().optional(),
+});
+
+export const diagnosisSchema = z.object({
+  symptoms: z.string(),
+  diagnosis: z.string(),
+  prescribed_medications: z.string().optional(),
+  notes: z.string().optional(),
+  follow_up_plan: z.string().optional(),
+});

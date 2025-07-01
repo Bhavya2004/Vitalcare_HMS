@@ -1,11 +1,6 @@
 import { Request, Response } from "express";
-import { PrismaClient } from "@prisma/client";
 import { z } from "zod";
-import { patientRegistrationSchema } from "../validations/patient.validation";
-
-const prisma = new PrismaClient();
-
-type PatientFormData = z.infer<typeof patientRegistrationSchema>;
+import { registerPatientDetailsService, checkPatientRegistrationService } from '../services/patient.service';
 
 /**
  * Registers patient details in the system.
@@ -34,44 +29,11 @@ export const registerPatientDetails = async (req: Request, res: Response): Promi
       res.status(401).json({ message: "Unauthorized" });
       return;
     }
-    // body fields from multipart/form-data
-    const formData = {...req.body} as PatientFormData;
-
-    // Attach file path to formData
-    if (req.file) {
-      formData.img = `/uploads/${req.file.filename}`;
-    }
-
-    // Validate form data with Zod
-    const validatedData : PatientFormData = patientRegistrationSchema.parse(formData);
-
-    // Check if the patient is already registered
-    const existingPatient = await prisma.patient.findUnique({
-      where: { user_id: userId },
-    });
-
-    if (existingPatient) {
-      res.status(400).json({ message: "Patient details already registered" });
-      return;
-    }
-
-    // Create patient record in the database
-    const patient = await prisma.patient.create({
-      data: {
-        ...validatedData,
-        user_id: userId,
-      },
-    });
-
+    const formData = { ...(req.body as Record<string, unknown>) };
+    const patient = await registerPatientDetailsService(userId, formData, req.file);
     res.status(201).json({
       message: "Patient details registered successfully",
-      patient: {
-        id: patient.id,
-        first_name: patient.first_name,
-        last_name: patient.last_name,
-        email: patient.email,
-        img: patient.img,
-      },
+      patient,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -80,7 +42,7 @@ export const registerPatientDetails = async (req: Request, res: Response): Promi
         errors: error.errors,
       });
     } else {
-      res.status(500).json({ message: "Internal server error" });
+      res.status(400).json({ message: error instanceof Error ? error.message : "Internal server error" });
     }
   }
 };
@@ -105,19 +67,9 @@ export const checkPatientRegistration = async (req: Request, res: Response): Pro
       res.status(401).json({ message: "Unauthorized" });
       return;
     }
-
-    // Check if the patient is already registered
-    const isRegistered = await prisma.patient.findUnique({
-      where: { user_id: userId },
-    });
-
-   if (isRegistered) {
-      res.json({ isRegistered:true });
-   } else {
-      res.json({ isRegistered:false });
-   }
+    const isRegistered = await checkPatientRegistrationService(userId);
+    res.json({ isRegistered });
   } catch (error) {
-    console.error("Error checking patient registration:", error);
-    res.status(500).json({ message: "Internal server error" });
+    res.status(400).json({ message: error instanceof Error ? error.message : "Internal server error" });
   }
-}
+};

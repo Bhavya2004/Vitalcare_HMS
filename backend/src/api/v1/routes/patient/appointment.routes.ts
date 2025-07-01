@@ -4,10 +4,10 @@ import { checkAccess } from "../../middlewares/authentication.middleware";
 import {
   createAppointment,
   getPatientAppointments,
+  getAppointmentCount,
   getAppointmentById,
   updateAppointmentStatus,
-  getDoctors,
-  getAppointmentCount,
+  getDoctors
 } from "../../controllers/appointment.controller";
 
 const router = express.Router();

@@ -1,9 +1,6 @@
 import { Request, Response } from 'express';
-import { createDoctorService, getAllDoctorsService, getDoctorAppointmentsService, getDoctorsForPatientsService, getAppointmentByIdService, addVitalSignsService } from '../services/doctor.service';
-import { createDoctorSchema } from '../validations/doctor.validation';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { createDoctorService, getAllDoctorsService, getDoctorsForPatientsService, getAppointmentByIdService, addVitalSignsService, getDiagnosisForAppointmentService, getDoctorAppointmentsByUserId, updateDoctorAppointmentStatus as updateDoctorAppointmentStatusService, addDiagnosisForAppointmentFull } from '../services/doctor.service';
+import { createDoctorSchema, doctorAppointmentStatusSchema, vitalSignsSchema, diagnosisSchema } from '../validations/doctor.validation';
 
 export const createDoctor = async (req: Request, res: Response) => {
   try {
@@ -35,14 +32,15 @@ export const getAllDoctors = async (req: Request, res: Response) => {
 
 export const getDoctorAppointments = async (req: Request, res: Response): Promise<void> => {
   try {
-    const doctor = await prisma.doctor.findUnique({
-      where: { user_id: req.userId },
-    });
-    if (!doctor) {
+    if (!req.userId) {
+      res.status(401).json({ success: false, message: 'Unauthorized: Missing userId' });
+      return;
+    }
+    const appointments = await getDoctorAppointmentsByUserId(req.userId);
+    if (!appointments) {
       res.status(404).json({ success: false, message: 'Doctor profile not found' });
       return;
     }
-    const appointments = await getDoctorAppointmentsService(doctor.id);
     res.status(200).json({ success: true, data: appointments });
   } catch (error: unknown) {
     if (error instanceof Error) {
@@ -68,35 +66,32 @@ export const getDoctorsForPatients = async (req: Request, res: Response) => {
 
 export const updateDoctorAppointmentStatus = async (req: Request, res: Response): Promise<void> => {
   try {
-    const userId = req.userId;
-    const doctor = await prisma.doctor.findFirst({ where: { user_id: userId } });
-    if (!doctor) {
-      res.status(403).json({ message: "Access denied: You don't have permission to access this !" });
+    if (!req.userId) {
+      res.status(401).json({ message: 'Unauthorized: Missing userId' });
       return;
     }
-
+    const userId = req.userId;
     const appointmentId = parseInt(req.params.id);
     if (isNaN(appointmentId)) {
       res.status(400).json({ message: "Invalid appointment ID" });
       return;
     }
-
-    const appointment = await prisma.appointment.findFirst({
-      where: { id: appointmentId, doctor_id: doctor.id }
-    });
-    if (!appointment) {
+    const { status, reason } = doctorAppointmentStatusSchema.parse(req.body);
+    const result = await updateDoctorAppointmentStatusService(userId, appointmentId, status, reason);
+    if (result.error === 'Doctor not found') {
+      res.status(403).json({ message: "Access denied: You don't have permission to access this !" });
+      return;
+    }
+    if (result.error === 'Appointment not found') {
       res.status(404).json({ message: "Appointment not found" });
       return;
     }
-
-    const { status, reason } = req.body;
-    const updated = await prisma.appointment.update({
-      where: { id: appointmentId },
-      data: { status, reason }
-    });
-
-    res.status(200).json({ success: true, data: updated });
-  } catch (error) {
+    if (result.error === 'Invalid status value') {
+      res.status(400).json({ message: "Invalid status value" });
+      return;
+    }
+    res.status(200).json({ success: true, data: result.updated });
+  } catch {
     res.status(500).json({ message: "Internal server error" });
   }
 };
@@ -134,7 +129,7 @@ export const addVitalSigns = async (
       return;
     }
     const appointmentId = parseInt(req.params.id, 10);
-    const vitalSignsData = req.body;
+    const vitalSignsData = vitalSignsSchema.parse(req.body);
     const newVitals = await addVitalSignsService(
       appointmentId,
       vitalSignsData,
@@ -142,5 +137,43 @@ export const addVitalSigns = async (
     res.status(201).json(newVitals);
   } catch (error) {
     res.status(500).json({ message: 'Error adding vital signs', error });
+  }
+};
+
+export const getDiagnosisForAppointment = async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (req.role !== 'DOCTOR') {
+      res.status(403).json({ message: 'Forbidden' });
+      return;
+    }
+    const appointmentId = parseInt(req.params.id, 10);
+    const diagnosis = await getDiagnosisForAppointmentService(appointmentId);
+    res.status(200).json(diagnosis);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching diagnosis', error });
+  }
+};
+
+export const addDiagnosisForAppointment = async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (req.role !== 'DOCTOR' || !req.userId) {
+      res.status(403).json({ message: 'Forbidden' });
+      return;
+    }
+    const appointmentId = parseInt(req.params.id, 10);
+    const diagnosisData = diagnosisSchema.parse(req.body);
+    const result = await addDiagnosisForAppointmentFull(req.userId, appointmentId, diagnosisData);
+    if (result.error === 'Doctor profile not found') {
+      res.status(403).json({ message: "Doctor profile not found" });
+      return;
+    }
+    if (result.error === 'Appointment not found') {
+      res.status(404).json({ message: 'Appointment not found' });
+      return;
+    }
+    res.status(201).json(result.newDiagnosis);
+  } catch (error) {
+    console.error('Error adding diagnosis:', error);
+    res.status(500).json({ message: 'Error adding diagnosis', error });
   }
 };

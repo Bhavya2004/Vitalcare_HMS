@@ -7,6 +7,8 @@ import {
   getAppointmentById,
   updateDoctorAppointmentStatus,
   addVitalSigns,
+  getDiagnosisForAppointment,
+  addDiagnosisForAppointment
 } from '../controllers/doctor.controller';
 import { verifyJWT } from '../middlewares/jwt.middleware';
 import { checkAccess } from '../middlewares/authentication.middleware';
@@ -29,5 +31,7 @@ router.get('/doctor/appointments', verifyJWT, checkAccess('DOCTOR'), getDoctorAp
 router.get('/doctor/appointments/:id', verifyJWT, checkAccess('DOCTOR'), getAppointmentById);
 router.put('/doctor/appointments/:id/status', verifyJWT, checkAccess('DOCTOR'), updateDoctorAppointmentStatus);
 router.post('/doctor/appointments/:id/vitals', verifyJWT, checkAccess('DOCTOR'), addVitalSigns);
+router.get('/doctor/appointments/:id/diagnosis', verifyJWT, checkAccess('DOCTOR'), getDiagnosisForAppointment);
+router.post('/doctor/appointments/:id/diagnosis', verifyJWT, checkAccess('DOCTOR'), addDiagnosisForAppointment);
 
 export default router; 

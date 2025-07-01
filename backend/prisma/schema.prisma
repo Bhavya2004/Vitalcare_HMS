@@ -114,7 +114,7 @@ model Doctor {
   type                JOBTYPE       @default(FULL)
   working_days        WorkingDays[]
   appointments        Appointment[]
-
+  diagnosis           Diagnosis[]
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 }
@@ -161,9 +161,9 @@ model MedicalRecords {
   appointment    Appointment  @relation(fields: [appointment_id], references: [id], onDelete: Cascade)
   patient        Patient      @relation(fields: [patient_id], references: [id], onDelete: Cascade)
   vital_signs    VitalSigns[]
-
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  diagnosis      Diagnosis[]
+  created_at     DateTime     @default(now())
+  updated_at     DateTime     @updatedAt
 }
 
 model VitalSigns {
@@ -181,4 +181,20 @@ model VitalSigns {
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
+}
+
+model Diagnosis {
+  id              Int      @id @default(autoincrement())
+  patient_id      String
+  medical_id      Int
+  doctor_id       String
+  doctor          Doctor    @relation(fields: [doctor_id], references: [id])
+  symptoms        String    
+  diagnosis       String    
+  notes           String?   
+  prescribed_medications String?   
+  follow_up_plan   String?
+  medical         MedicalRecords @relation(fields: [medical_id ], references: [id], onDelete: Cascade)
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
 }

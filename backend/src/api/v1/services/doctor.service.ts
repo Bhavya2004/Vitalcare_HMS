@@ -1,8 +1,12 @@
 import bcrypt from 'bcryptjs';
-import {  PrismaClient } from "@prisma/client";
+import { PrismaClient, AppointmentStatus } from "@prisma/client";
 import { DoctorCreateInput } from '../interfaces/doctors/doctor_types';
+import { z } from 'zod';
+import { vitalSignsSchema, diagnosisSchema } from '../validations/doctor.validation';
 
 const prisma = new PrismaClient();
+type VitalSignsInput = z.infer<typeof vitalSignsSchema>;
+type DiagnosisInput = z.infer<typeof diagnosisSchema>;
 
 export const createDoctorService = async (data: DoctorCreateInput) => {
   const { email, password, name, specialization, department, license_number, phone, address, type, working_days } = data;
@@ -85,7 +89,7 @@ export const getAppointmentByIdService = async (appointmentId: number) => {
 
 export const addVitalSignsService = async (
   appointmentId: number,
-  data: any,
+  data: VitalSignsInput,
 ) => {
   const appointment = await prisma.appointment.findUnique({
     where: { id: appointmentId },
@@ -110,10 +114,110 @@ export const addVitalSignsService = async (
     });
   }
 
+  const { temperature, blood_pressure, heart_rate, weight, height, respiratory_rate, oxygen_saturation } = data;
+  const [systolic, diastolic] = blood_pressure.split('/').map(Number);
+
   return prisma.vitalSigns.create({
     data: {
       medical_id: medicalRecord.id,
-      ...data,
+      body_temperature: temperature,
+      systolic,
+      diastolic,
+      heart_rate: String(heart_rate),
+      weight,
+      height,
+      ...(respiratory_rate !== undefined ? { respiratory_rate } : {}),
+      ...(oxygen_saturation !== undefined ? { oxygen_saturation } : {}),
     },
   });
-}; 
+};
+
+export const getDiagnosisForAppointmentService = async (appointmentId: number) => {
+  // Find the medical record for this appointment
+  const medicalRecord = await prisma.medicalRecords.findUnique({
+    where: { appointment_id: appointmentId },
+    include: { diagnosis: { include: { doctor: true } } },
+  });
+  if (!medicalRecord) {
+    return [];
+  }
+  return medicalRecord.diagnosis;
+};
+
+export const addDiagnosisForAppointmentService = async (
+  appointmentId: number,
+  doctorId: string,
+  patientId: string,
+  data: DiagnosisInput
+) => {
+  // Find or create the medical record for this appointment
+  let medicalRecord = await prisma.medicalRecords.findUnique({
+    where: { appointment_id: appointmentId },
+  });
+  if (!medicalRecord) {
+    medicalRecord = await prisma.medicalRecords.create({
+      data: {
+        appointment_id: appointmentId,
+        patient_id: patientId,
+        doctor_id: doctorId,
+      },
+    });
+  }
+  // Create the diagnosis
+  return prisma.diagnosis.create({
+    data: {
+      ...data,
+      medical_id: medicalRecord.id,
+      doctor_id: doctorId,
+      patient_id: patientId,
+    },
+  });
+};
+
+export const getDoctorByUserId = async (userId: string) => {
+  return prisma.doctor.findUnique({ where: { user_id: userId } });
+};
+
+export const getDoctorAppointmentsByUserId = async (userId: string) => {
+  const doctor = await getDoctorByUserId(userId);
+  if (!doctor) return null;
+  return getDoctorAppointmentsService(doctor.id);
+};
+
+export const updateDoctorAppointmentStatus = async (userId: string, appointmentId: number, status: string, reason?: string) => {
+  // Validate status is a valid AppointmentStatus
+  if (!Object.values(AppointmentStatus).includes(status as AppointmentStatus)) {
+    return { error: 'Invalid status value' };
+  }
+  const doctor = await prisma.doctor.findFirst({ where: { user_id: userId } });
+  if (!doctor) return { error: 'Doctor not found' };
+  const appointment = await prisma.appointment.findFirst({ where: { id: appointmentId, doctor_id: doctor.id } });
+  if (!appointment) return { error: 'Appointment not found' };
+  const updated = await prisma.appointment.update({
+    where: { id: appointmentId },
+    data: { status: status as AppointmentStatus, reason }
+  });
+  return { updated };
+};
+
+export const addDiagnosisForAppointmentFull = async (
+  userId: string,
+  appointmentId: number,
+  diagnosisData: DiagnosisInput
+) => {
+  // Lookup doctor by user_id
+  const doctor = await prisma.doctor.findUnique({ where: { user_id: userId } });
+  if (!doctor) return { error: 'Doctor profile not found' };
+  const doctorId = doctor.id;
+  // Find patientId from appointment
+  const appointment = await prisma.appointment.findUnique({ where: { id: appointmentId } });
+  if (!appointment) return { error: 'Appointment not found' };
+  const patientId = appointment.patient_id;
+  const newDiagnosis = await addDiagnosisForAppointmentService(
+    appointmentId,
+    doctorId,
+    patientId,
+    diagnosisData
+  );
+  return { newDiagnosis };
+};

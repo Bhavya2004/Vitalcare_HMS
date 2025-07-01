@@ -1,12 +1,8 @@
 import { Request, Response } from "express";
-import jwt from "jsonwebtoken";
-import { PrismaClient } from "@prisma/client";
-import bcrypt from "bcryptjs";
-import { loginSchema, registerSchema } from "../validations/authentication.validation";
 import { z } from "zod";
 import { RegisterRequestBody } from "../interfaces/types/types";
-
-const prisma = new PrismaClient();
+import { loginService, registerService } from '../services/authentication.service';
+import { loginSchema } from "../validations/authentication.validation";
 
 /**
  * Handles user login by validating credentials, generating a JWT token, and returning it to the client.
@@ -20,67 +16,20 @@ const prisma = new PrismaClient();
  *
  */
 export const login = async (req: Request, res: Response): Promise<void> => {
-  
-  try{
-    // Parse and validate the request body using `loginSchema`.
-    const { email, password } = loginSchema.parse(req.body);
-
-    // Check if a user with the provided email exists in the database.
-    const user=await prisma.user.findUnique({
-        where:{email},
-        include:{patient:true}
-    });
-
-    // Verify the provided password against the stored hashed password.
-    if (!user || !bcrypt.compareSync(password, user.password)) {
-        res.status(401).json({ message: "Invalid email or password" });
-        return;
-      }
-  
-    // Ensure that the JWT secret key is defined in the environment variables.
-    if (!process.env.JWT_SECRET) {
-        res.status(500).json({ message: "Secret key for JWT is not defined in the environment variables" });
-        return;
+  try {
+    const validatedBody = loginSchema.parse(req.body);
+    const result = await loginService(validatedBody);
+    res.json(result);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ 
+        message: "Invalid input", 
+        errors: error.errors 
+      });
+    } else {
+      res.status(401).json({ message: error instanceof Error ? error.message : "Internal server error" });
     }
-
-    // Generate a JWT token with the user's ID and role as the payload.
-    const token = jwt.sign(
-        { 
-          id: user.id,
-          role: user.role,
-          firstName: user.patient?.first_name,
-          lastName: user.patient?.last_name,
-          gender: user.patient?.gender
-        }, // Payload
-        process.env.JWT_SECRET, // Secret key
-        { expiresIn: "1h" } // Token expiration
-    );
-
-    // Return the generated token in the response.
-    res.json({ 
-      token,
-      user:{
-        id: user.id,
-        email: user.email,
-        role: user.role,
-        firstName: user.patient?.first_name,
-        lastName: user.patient?.last_name,
-        gender:user.patient?.gender
-      } });
-}
-catch(error){
-  // Handle validation errors and internal server errors
-  if (error instanceof z.ZodError) {
-    res.status(400).json({ 
-      message: "Invalid input", 
-      errors: error.errors 
-    });
   }
-  else{
-    console.error("Error during login:", error);
-    res.status(500).json({ message: "Internal server error" });
-  }
-}
 };
 
 /**
@@ -105,52 +54,19 @@ catch(error){
  */
 export const register = async (req: Request<object, object, RegisterRequestBody>, res: Response): Promise<void> => {
   try {
-      const { email, password, firstName, lastName } = registerSchema.parse(req.body);
-      if (!email || !password) {
-        res.status(400).json({ message: "Email and password are required" });
-        return;
-      }
-  
-      const existingUser = await prisma.user.findUnique({
-        where: { email },
-      });
-  
-      if (existingUser) {
-        res.status(409).json({ message: "Email already exists" });
-        return;
-      }
-  
-      const hashedPassword = bcrypt.hashSync(password, 10);
-  
-      const newUser = await prisma.user.create({
-        data: {
-          email,
-          password: hashedPassword,
-          firstName,
-          lastName,
-          role: "PATIENT",
-          status: "ACTIVE",
-        },
-        select:{
-          id:true,
-          email:true,
-          role:true,
-        }
-      });
-  
-      res.status(201).json({
-        message: "User registered successfully",
-        user: newUser
-      });
+    const newUser = await registerService(req.body);
+    res.status(201).json({
+      message: "User registered successfully",
+      user: newUser
+    });
   } catch (error) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ 
-          message: "Validation failed", 
-          errors: error.errors 
-        });
-      } else {
-        console.error("Error during registration:", error);
-        res.status(500).json({ message: "Internal server error" });
-      }
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ 
+        message: "Validation failed", 
+        errors: error.errors 
+      });
+    } else {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Internal server error" });
+    }
   }
 };
