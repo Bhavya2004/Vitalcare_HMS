@@ -6,9 +6,10 @@ import adminRoutes from "./api/v1/routes/admin/adminDashboard.routes";
 import authRoutes from "./api/v1/routes/authentication.routes";
 import patientRoutes from "./api/v1/routes/patient/patient.routes";
 import appointmentRoutes from "./api/v1/routes/patient/appointment.routes";
+import doctorRoutes from "./api/v1/routes/doctor.routes";
+import serviceRoutes from "./api/v1/routes/admin/services.routes";
 import cors from 'cors'
 import path from 'path';
-import doctorRoutes from "./api/v1/routes/doctor.routes";
 
 dotenv.config();
 const app=express();
@@ -26,6 +27,7 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 app.use("/admin", adminRoutes);
+app.use("/admin/services",serviceRoutes);
 app.use("/auth", authRoutes);
 app.use("/patient", patientRoutes);
 app.use("/patient/appointments", appointmentRoutes);
