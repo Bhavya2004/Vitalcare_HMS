@@ -221,3 +221,93 @@ export const addDiagnosisForAppointmentFull = async (
   );
   return { newDiagnosis };
 };
+
+// --- Billing Services ---
+
+export const getBillsForAppointment = async (appointmentId: number) => {
+  // Find payment record for this appointment
+  const payment = await prisma.payment.findUnique({
+    where: { appointment_id: appointmentId },
+    include: {
+      bills: { include: { service: true } },
+    },
+  });
+  if (!payment) return [];
+  return payment.bills;
+};
+
+export const addBillToAppointment = async (
+  appointmentId: number,
+  { service_id, quantity, service_date }: { service_id: number; quantity: number; service_date: string }
+) => {
+  // Find or create payment record for this appointment
+  let payment = await prisma.payment.findUnique({ where: { appointment_id: appointmentId } });
+  if (!payment) {
+    // Find appointment and patient
+    const appointment = await prisma.appointment.findUnique({ where: { id: appointmentId } });
+    if (!appointment) throw new Error('Appointment not found');
+    payment = await prisma.payment.create({
+      data: {
+        appointment_id: appointmentId,
+        patient_id: appointment.patient_id,
+        bill_date: new Date(),
+        payment_date: new Date(),
+        discount: 0,
+        total_amount: 0,
+        amount_paid: 0,
+        status: 'UNPAID',
+      },
+    });
+  }
+  // Get service info
+  const service = await prisma.services.findUnique({ where: { id: service_id } });
+  if (!service) throw new Error('Service not found');
+  const total_cost = service.price * quantity;
+  // Create bill
+  const bill = await prisma.patientBills.create({
+    data: {
+      bill_id: payment.id,
+      service_id,
+      service_date: new Date(service_date),
+      quantity,
+      unit_cost: service.price,
+      total_cost,
+    },
+  });
+  return bill;
+};
+
+export const deleteBillFromAppointment = async (billId: number) => {
+  return prisma.patientBills.delete({ where: { id: billId } });
+};
+
+export const generateFinalBillForAppointment = async (
+  appointmentId: number,
+  { discount, bill_date }: { discount: number; bill_date: string }
+) => {
+  // Find payment record
+  const payment = await prisma.payment.findUnique({
+    where: { appointment_id: appointmentId },
+    include: { bills: true },
+  });
+  if (!payment) throw new Error('No bills to generate final bill');
+  // Calculate total
+  const total = payment.bills.reduce((sum: number, bill: { total_cost: number }) => sum + bill.total_cost, 0);
+  const discountAmount = (total * discount) / 100;
+  const payable = total - discountAmount;
+  // Update payment record
+  const updated = await prisma.payment.update({
+    where: { id: payment.id },
+    data: {
+      discount,
+      total_amount: total,
+      bill_date: new Date(bill_date),
+      // amount_paid, status, etc. can be updated later
+    },
+  });
+  return { ...updated, payable, discountAmount };
+};
+
+export const getAllServices = async () => {
+  return prisma.services.findMany();
+};

@@ -41,3 +41,14 @@ export const diagnosisSchema = z.object({
   notes: z.string().optional(),
   follow_up_plan: z.string().optional(),
 });
+
+export const addBillSchema = z.object({
+  service_id: z.number(),
+  quantity: z.number().min(1),
+  service_date: z.string(), // ISO date string
+});
+
+export const generateFinalBillSchema = z.object({
+  discount: z.number().min(0).max(100), // percent
+  bill_date: z.string(), // ISO date string
+});

@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { createDoctorService, getAllDoctorsService, getDoctorsForPatientsService, getAppointmentByIdService, addVitalSignsService, getDiagnosisForAppointmentService, getDoctorAppointmentsByUserId, updateDoctorAppointmentStatus as updateDoctorAppointmentStatusService, addDiagnosisForAppointmentFull } from '../services/doctor.service';
-import { createDoctorSchema, doctorAppointmentStatusSchema, vitalSignsSchema, diagnosisSchema } from '../validations/doctor.validation';
+import { createDoctorService, getAllDoctorsService, getDoctorsForPatientsService, getAppointmentByIdService, addVitalSignsService, getDiagnosisForAppointmentService, getDoctorAppointmentsByUserId, updateDoctorAppointmentStatus as updateDoctorAppointmentStatusService, addDiagnosisForAppointmentFull, getBillsForAppointment as getBillsForAppointmentService, addBillToAppointment as addBillToAppointmentService, deleteBillFromAppointment as deleteBillFromAppointmentService, generateFinalBillForAppointment as generateFinalBillForAppointmentService, getAllServices as getAllServicesService } from '../services/doctor.service';
+import { createDoctorSchema, doctorAppointmentStatusSchema, vitalSignsSchema, diagnosisSchema, addBillSchema, generateFinalBillSchema } from '../validations/doctor.validation';
 
 export const createDoctor = async (req: Request, res: Response) => {
   try {
@@ -175,5 +175,72 @@ export const addDiagnosisForAppointment = async (req: Request, res: Response): P
   } catch (error) {
     console.error('Error adding diagnosis:', error);
     res.status(500).json({ message: 'Error adding diagnosis', error });
+  }
+};
+
+export const getBillsForAppointment = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const appointmentId = parseInt(req.params.id, 10);
+    if (isNaN(appointmentId)) {
+      res.status(400).json({ message: 'Invalid appointment ID' });
+      return;
+    }
+    const bills = await getBillsForAppointmentService(appointmentId);
+    res.status(200).json(bills);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching bills', error });
+  }
+};
+
+export const addBillToAppointment = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const appointmentId = parseInt(req.params.id, 10);
+    if (isNaN(appointmentId)) {
+      res.status(400).json({ message: 'Invalid appointment ID' });
+      return;
+    }
+    const billData = addBillSchema.parse(req.body);
+    const bill = await addBillToAppointmentService(appointmentId, billData);
+    res.status(201).json(bill);
+  } catch (error) {
+    res.status(500).json({ message: 'Error adding bill', error });
+  }
+};
+
+export const deleteBillFromAppointment = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const billId = parseInt(req.params.billId, 10);
+    if (isNaN(billId)) {
+      res.status(400).json({ message: 'Invalid bill ID' });
+      return;
+    }
+    await deleteBillFromAppointmentService(billId);
+    res.status(204).send();
+  } catch (error) {
+    res.status(500).json({ message: 'Error deleting bill', error });
+  }
+};
+
+export const generateFinalBillForAppointment = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const appointmentId = parseInt(req.params.id, 10);
+    if (isNaN(appointmentId)) {
+      res.status(400).json({ message: 'Invalid appointment ID' });
+      return;
+    }
+    const data = generateFinalBillSchema.parse(req.body);
+    const result = await generateFinalBillForAppointmentService(appointmentId, data);
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(500).json({ message: 'Error generating final bill', error });
+  }
+};
+
+export const getAllServices = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const services = await getAllServicesService();
+    res.status(200).json(services);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching services', error });
   }
 };
